@@ -1,4 +1,4 @@
-/* Speedy Spare Parts — simple catalog with pagination */
+/* Speedy Spare Parts — Clean Dynamic Catalog */
 const CatalogApp = (() => {
   const state = {
     page: 1,
@@ -23,6 +23,16 @@ const CatalogApp = (() => {
       state.page = 1;
       applyAndRender();
     });
+    
+    // Allow search to trigger instantly when hitting 'Enter' in search box
+    $('#q')?.addEventListener('keypress', (e)=>{
+      if (e.key === 'Enter') {
+        state.q = ($('#q')?.value||'').trim();
+        state.page = 1;
+        applyAndRender();
+      }
+    });
+
     $('#applyFilters')?.addEventListener('click', ()=>{
       state.category = $('#fCategory')?.value||'';
       state.maxPrice = Number($('#fMaxPrice')?.value||9999);
@@ -32,7 +42,7 @@ const CatalogApp = (() => {
   }
 
   function loadProducts() {
-    state.products = demoProducts();
+    state.products = realProducts();
     renderCategoryFilter();
     applyAndRender();
   }
@@ -92,8 +102,8 @@ const CatalogApp = (() => {
       title.textContent = p.title;
       oem.textContent = p.oemNo || '-';
       app.textContent = p.app || '-';
-      moq.textContent = p.moq ? `MOQ:${p.moq}` : '-';
-      dDate.textContent = p.deliveryDays ? `${p.deliveryDays} Day` : '-';
+      moq.textContent = p.moq ? `${p.moq} Pcs` : '-';
+      dDate.textContent = p.deliveryDays ? `${p.deliveryDays} Days` : '-';
 
       rows.innerHTML = p.priceTiers.map(t => `
         <div class="tier">
@@ -103,14 +113,14 @@ const CatalogApp = (() => {
       `).join('');
 
       buy.addEventListener('click', () => {
-        alert(`Buy: ${p.title}\nOEM: ${p.oemNo||'-'}`);
+        alert(`Added to Enquiry: ${p.title}\nOEM Required: ${p.oemNo||'-'}`);
       });
 
       grid.appendChild(node);
     });
 
     if (items.length === 0) {
-      grid.innerHTML = '<p style="color:#93a0ae">No products found.</p>';
+      grid.innerHTML = '<p style="color:#93a0ae; grid-column: 1/-1; text-align: center; padding: 40px;">No matching spare parts found.</p>';
     }
   }
 
@@ -124,7 +134,7 @@ const CatalogApp = (() => {
     let html = '';
     if (pages > 1) {
       html += btn(Math.max(1, state.page-1), 'Prev');
-      for (let i=1;i<=pages;i++){
+      for (let i=1; i<=pages; i++){
         if (i===1 || i===pages || Math.abs(i-state.page)<=2) html += btn(i);
         else if (!html.endsWith('…')) html += '<span style="color:#93a0ae;margin:0 4px">…</span>';
       }
@@ -138,8 +148,11 @@ const CatalogApp = (() => {
     }));
   }
 
-  function demoProducts() {
-    const base = 'assets/products/';
+  function realProducts() {
+    const catPath = 'assets/categories/';
+    const prodPath = 'assets/products/';
+    
+    // Remapped to point exactly to files visible on your GitHub tree snapshot
     return [
       {
         id: 101,
@@ -149,11 +162,11 @@ const CatalogApp = (() => {
         app: 'TITAN 150 2009 ES LH',
         moq: 100,
         deliveryDays: 30,
-        img: base + 'ev-display.jpg',
+        img: catPath + 'electronics.svg', // Maps safely to your existing vector
         priceTiers: [
-          {min:1,max:1000,price:1.76},
-          {min:1000,max:10000,price:1.63},
-          {min:10000,max:null,price:1.50}
+          {min:1, max:1000, price:1.76},
+          {min:1000, max:10000, price:1.63},
+          {min:10000, max:null, price:1.50}
         ]
       },
       {
@@ -164,11 +177,11 @@ const CatalogApp = (() => {
         app: 'TYPE: Iridium',
         moq: 3000,
         deliveryDays: 60,
-        img: base + 'motor-controller.jpg',
+        img: catPath + 'motor.svg', // Maps safely to your motor asset
         priceTiers: [
-          {min:1,max:1000,price:1.32},
-          {min:1000,max:10000,price:1.23},
-          {min:10000,max:null,price:1.13}
+          {min:1, max:1000, price:1.32},
+          {min:1000, max:10000, price:1.23},
+          {min:10000, max:null, price:1.13}
         ]
       },
       {
@@ -179,41 +192,41 @@ const CatalogApp = (() => {
         app: 'HONDA 45351GBY910ZA',
         moq: 100,
         deliveryDays: 60,
-        img: base + 'ev-brake-pads.jpg',
+        img: catPath + 'brake.svg', // Maps safely to your brake asset
         priceTiers: [
-          {min:1,max:1000,price:4.77},
-          {min:1000,max:10000,price:4.41},
-          {min:10000,max:null,price:4.06}
+          {min:1, max:1000, price:4.77},
+          {min:1000, max:10000, price:4.41},
+          {min:10000, max:null, price:4.06}
         ]
       },
       {
         id: 104,
         title: 'V-Belt 6PK1065',
-        category: 'Belt',
+        category: 'Battery',
         oemNo: '6PK*1065',
         app: 'Tara',
         moq: 100,
         deliveryDays: 60,
-        img: base + 'hv-cable.jpg',
+        img: catPath + 'battery.svg', // Maps safely to your battery asset
         priceTiers: [
-          {min:1,max:1000,price:2.61},
-          {min:1000,max:10000,price:2.41},
-          {min:10000,max:null,price:2.22}
+          {min:1, max:1000, price:2.61},
+          {min:1000, max:10000, price:2.41},
+          {min:10000, max:null, price:2.22}
         ]
       },
-      ...Array.from({length:20}).map((_,i)=>({
-        id: 200+i,
-        title: 'Switch Assy Variant ' + (i+1),
-        category: i%2 ? 'Electrical' : 'Engine',
+      ...Array.from({length: 24}).map((_, i) => ({
+        id: 200 + i,
+        title: 'Switch Assy Variant ' + (i + 1),
+        category: i % 2 ? 'Electrical' : 'Thermal',
         oemNo: '35200-KPE-900',
         app: 'APP: POP-100, LH',
         moq: 200,
         deliveryDays: 20,
-        img: base + 'charging-port.jpg',
+        img: i % 3 === 0 ? prodPath + 'charging-port.jpg' : catPath + 'thermal.svg', // Alternates between your high-res charging port and thermal vector
         priceTiers: [
-          {min:1,max:1000,price:1.76},
-          {min:1000,max:10000,price:1.63},
-          {min:10000,max:null,price:1.50}
+          {min:1, max:1000, price:1.76},
+          {min:1000, max:10000, price:1.63},
+          {min:10000, max:null, price:1.50}
         ]
       }))
     ];
